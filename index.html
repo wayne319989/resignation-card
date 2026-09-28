@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>尊榮離職集點卡 & 社畜解壓神器</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Noto+Sans+TC:wght@400;600;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'sans-serif'],
+            serif: ['"Noto Serif TC"', 'serif'],
+            mono: ['"Chakra Petch"', 'monospace']
+          },
+          colors: {
+            loyalty: {
+              gold: '#D4AF37',
+              red: '#B91C1C',
+              seal: '#C53030',
+              paper: '#FFFDF9',
+              darkcard: '#1E1B18'
+            }
+          },
+          animation: {
+            'hologram': 'holoShift 4s ease infinite',
+            'bounce-once': 'bounce 0.6s ease-in-out 1'
+          },
+          keyframes: {
+            holoShift: {
+              '0%, 100%': { filter: 'hue-rotate(0deg) brightness(1)' },
+              '50%': { filter: 'hue-rotate(90deg) brightness(1.2)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Stamp & Texture Styling */
+    .stamp-badge {
+      transform: rotate(var(--rot, -12deg)) scale(1);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: 3.5px double #dc2626;
+      color: #dc2626;
+      text-shadow: 0 0 1px rgba(220, 38, 38, 0.6);
+      box-shadow: inset 0 0 8px rgba(220, 38, 38, 0.25), 0 3px 6px rgba(0,0,0,0.15);
+      background: radial-gradient(circle, rgba(254, 226, 226, 0.96) 35%, rgba(254, 202, 202, 0.9) 100%);
+    }
+
+    .retro-border {
+      border: 4px solid #b45309;
+      box-shadow: 0 0 0 4px #fef3c7, 0 12px 30px -5px rgba(0, 0, 0, 0.22);
+    }
+
+    .dark .retro-border {
+      border: 4px solid #f59e0b;
+      box-shadow: 0 0 0 4px #451a03, 0 12px 30px -5px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Holographic Laser Security Sticker */
+    .hologram-tag {
+      background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 50%, #84fab0 100%);
+      box-shadow: 0 0 10px rgba(166, 193, 238, 0.5);
+    }
+
+    /* Floating +1 Text Animation */
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0px) scale(0.9); }
+      50% { transform: translateY(-35px) scale(1.18); }
+      100% { opacity: 0; transform: translateY(-70px) scale(1.25); }
+    }
+    .float-text {
+      position: absolute;
+      pointer-events: none;
+      font-weight: 900;
+      animation: floatUp 0.85s ease-out forwards;
+      z-index: 60;
+    }
+
+    /* Shake Screen Animation */
+    @keyframes miniShake {
+      0%, 100% { transform: translate(0, 0) rotate(0); }
+      20% { transform: translate(-3px, 2px) rotate(-0.5deg); }
+      40% { transform: translate(3px, -2px) rotate(0.5deg); }
+      60% { transform: translate(-2px, -1px); }
+      80% { transform: translate(2px, 1px); }
+    }
+    .screen-shake {
+      animation: miniShake 0.25s ease-in-out;
+    }
+
+    /* Background noise */
+    .bg-paper-pattern {
+      background-color: #fdfbf7;
+      background-image: radial-gradient(#d1d5db 0.8px, transparent 0.8px);
+      background-size: 16px 16px;
+    }
+    .dark .bg-paper-pattern {
+      background-color: #121214;
+      background-image: radial-gradient(#27272a 0.8px, transparent 0.8px);
+      background-size: 16px 16px;
+    }
+
+    /* Print optimization for actual Loyalty card / A4 export */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-loyalty-card, #printable-loyalty-card * {
+        visibility: visible;
+      }
+      #printable-loyalty-card {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: 2px solid #333 !important;
+        background: #fff !important;
+        color: #000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-paper-pattern text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-300">
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-white/85 dark:bg-zinc-900/90 border-b border-amber-200 dark:border-zinc-800 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-rose-600 flex items-center justify-center text-white shadow-md font-serif text-xl font-bold shrink-0">
+          離
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg md:text-xl font-black tracking-tight">
+              尊榮離職集點卡
+            </h1>
+            <span class="text-[11px] bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300 font-mono px-2 py-0.5 rounded-full border border-red-300 dark:border-red-800 font-semibold">
+              社畜防破防神器 v3.0
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">忍無可忍，集滿召喚神龍開啟自由人生</p>
+        </div>
+      </div>
+
+      <!-- Right Action Bar & LocalStorage Auto-save Indicator -->
+      <div class="flex items-center gap-2">
+        <!-- Live Auto-Save Indicator -->
+        <div id="save-status-indicator" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-[11px] font-mono text-emerald-700 dark:text-emerald-300" title="關閉瀏覽器資料仍會完整保留在本地 LocalStorage">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="save-status-text" class="hidden md:inline">已自動存檔</span>
+        </div>
+
+        <button id="toggle-sound-btn" class="p-2 sm:p-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800 transition" title="聲音開關">
+          <i id="sound-icon" class="fa-solid fa-volume-high text-amber-600 dark:text-amber-400"></i>
+        </button>
+        <button id="toggle-dark-btn" class="p-2 sm:p-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800 transition" title="切換深淺模式">
+          <i id="theme-icon" class="fa-solid fa-moon text-indigo-500"></i>
+        </button>
+        <button onclick="switchTab('tools')" class="no-print hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs md:text-sm font-semibold rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 transition">
+          <i class="fa-solid fa-toolbox"></i> 摸魚軍火庫
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Tab Selector -->
+    <div class="flex border-t border-amber-200/50 dark:border-zinc-800 px-4 max-w-6xl mx-auto overflow-x-auto">
+      <button onclick="switchTab('card')" id="tab-card-btn" class="py-2.5 px-4 font-bold text-sm border-b-2 border-amber-600 text-amber-700 dark:text-amber-400 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-id-card"></i> 離職集點卡
+      </button>
+      <button onclick="switchTab('tools')" id="tab-tools-btn" class="py-2.5 px-4 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-poop"></i> 摸魚解壓軍火庫
+      </button>
+      <button onclick="switchTab('letter')" id="tab-letter-btn" class="py-2.5 px-4 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-envelope-open-text"></i> 狂暴離職信
+      </button>
+    </div>
+  </header>
+  <!-- Main Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 space-y-6">
+
+    <!-- ==================== TAB 1: 離職集點卡 ==================== -->
+    <section id="section-card" class="space-y-6">
+      
+      <!-- Top Action Banner -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-amber-50/90 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-200 shadow-sm">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl animate-bounce">🎁</span>
+          <div>
+            <div class="font-bold text-sm sm:text-base">集滿 10 點：召喚神龍兌換《真正的自由》與老子不幹了信封</div>
+            <div class="text-xs text-amber-700 dark:text-amber-300/80">
+              所有填寫姓名、事件蓋章已綁定本地儲存 (LocalStorage)，關閉視窗不遺失。
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="openCustomIncidentModal()" class="px-3 py-1.5 bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold shadow-sm border border-slate-300 dark:border-zinc-700 hover:bg-slate-50 active:scale-95 transition">
+            <i class="fa-solid fa-plus text-amber-500 mr-1"></i> 新增破防事件
+          </button>
+          <button onclick="openResetConfirmModal()" class="px-3 py-1.5 bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 rounded-lg text-xs font-semibold shadow-sm border border-red-200 dark:border-red-900/50 hover:bg-red-50 active:scale-95 transition">
+            <i class="fa-solid fa-rotate-left mr-1"></i> 重製卡片
+          </button>
+          <button onclick="window.print()" class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold shadow hover:bg-amber-700 active:scale-95 transition">
+            <i class="fa-solid fa-print mr-1"></i> 列印卡片震懾主管
+          </button>
+        </div>
+      </div>
+
+      <!-- THE VIP RESIGNATION CARD -->
+      <div id="printable-loyalty-card" class="relative bg-amber-50/80 dark:bg-zinc-900 rounded-3xl retro-border p-5 sm:p-8 transition-all overflow-hidden shadow-2xl">
+        
+        <!-- Laser Holographic Security Seal -->
+        <div class="absolute top-4 right-4 sm:top-6 sm:right-6 flex flex-col items-center">
+          <div class="hologram-tag w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-white/80 shadow-md flex items-center justify-center text-center p-1 animate-hologram rotate-6 select-none cursor-pointer" title="國家社畜自救委員會防偽雷射標籤" onclick="triggerLaserGlow()">
+            <div class="text-[9px] font-black leading-tight text-slate-800">
+              OFFICIAL<br>防偽認證<br>★ VIP ★
+            </div>
+          </div>
+          <span class="text-[9px] font-mono text-slate-400 mt-1">正版保障</span>
+        </div>
+
+        <!-- Decorative background watermark -->
+        <div class="absolute -bottom-8 -left-6 opacity-10 pointer-events-none select-none text-9xl font-serif font-black text-amber-900 dark:text-amber-300">
+          辭
+        </div>
+
+        <!-- Card Header with metadata -->
+        <div class="border-b-2 border-dashed border-amber-300 dark:border-zinc-700 pb-5 mb-6 relative pr-16 sm:pr-20">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600 text-white text-xs font-bold tracking-widest uppercase mb-1">
+              <i class="fa-solid fa-crown text-amber-300"></i> 2026 尊榮會員限定集點卡
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black font-serif tracking-tight text-slate-900 dark:text-amber-400">
+              超商尊榮離職集點卡
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              每受一次窩囊氣即可戳一格。集滿 10 格啟動老子不幹了流程，功德無量。
+            </p>
+          </div>
+
+          <!-- Profile Info Box (Editable + LocalStorage persistent) -->
+          <div class="mt-4 bg-white/90 dark:bg-zinc-800/90 border border-amber-200 dark:border-zinc-700 p-3 rounded-2xl flex flex-wrap items-center gap-3 text-xs shadow-sm">
+            <div>
+              <label class="block text-[10px] text-slate-400 uppercase font-mono">持卡受害者姓名</label>
+              <input id="user-name-input" type="text" value="天選社畜小王" oninput="saveUserProfile()" class="font-bold bg-transparent border-b border-dashed border-slate-300 focus:outline-none focus:border-amber-500 text-slate-800 dark:text-slate-100 w-28 sm:w-32 transition">
+            </div>
+            <div class="border-l border-slate-200 dark:border-zinc-700 pl-3">
+              <label class="block text-[10px] text-slate-400 uppercase font-mono">所屬渡劫部門</label>
+              <input id="user-dept-input" type="text" value="全功能揹鍋組" oninput="saveUserProfile()" class="font-bold bg-transparent border-b border-dashed border-slate-300 focus:outline-none focus:border-amber-500 text-slate-800 dark:text-slate-100 w-28 sm:w-32 transition">
+            </div>
+            <div class="border-l border-slate-200 dark:border-zinc-700 pl-3">
+              <label class="block text-[10px] text-slate-400 uppercase font-mono">理智剩餘指標</label>
+              <span id="mental-status-text" class="font-bold text-amber-600 dark:text-amber-400">微笑中透露著想死</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress to Freedom -->
+        <div class="mb-6 bg-white/70 dark:bg-zinc-800/60 p-4 rounded-2xl border border-amber-200/80 dark:border-zinc-800 shadow-inner">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs sm:text-sm font-bold flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
+              <i class="fa-solid fa-dove text-amber-500"></i> 通往真正自由進度條：
+            </span>
+            <span id="progress-percent" class="font-mono font-black text-amber-600 dark:text-amber-400 text-sm sm:text-base">0 / 10 點 (0%)</span>
+          </div>
+          <div class="w-full bg-slate-200 dark:bg-zinc-700 h-4 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-zinc-600">
+            <div id="progress-bar-fill" class="h-full bg-gradient-to-r from-amber-500 via-rose-500 to-red-600 rounded-full transition-all duration-500" style="width: 0%;"></div>
+          </div>
+
+          <!-- Unlocked Milestone Badges -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-200/60 dark:border-zinc-700/60 text-[11px]">
+            <div id="milestone-3" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 transition flex items-center gap-2">
+              <span class="text-base">🚽</span>
+              <div>
+                <div class="font-bold">滿 3 點：薪水小偷 LV1</div>
+                <div class="text-[9px] opacity-75">帶薪大號延長至25分</div>
+              </div>
+            </div>
+            <div id="milestone-6" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 transition flex items-center gap-2">
+              <span class="text-base">✈️</span>
+              <div>
+                <div class="font-bold">滿 6 點：被動・已讀不回</div>
+                <div class="text-[9px] opacity-75">下班後全域飛航模式</div>
+              </div>
+            </div>
+            <div id="milestone-8" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 transition flex items-center gap-2">
+              <span class="text-base">🗿</span>
+              <div>
+                <div class="font-bold">滿 8 點：無靈魂空殼</div>
+                <div class="text-[9px] opacity-75">所有問題一律回「好喔」</div>
+              </div>
+            </div>
+            <div id="milestone-10" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 transition flex items-center gap-2">
+              <span class="text-base">🐉</span>
+              <div>
+                <div class="font-bold">滿 10 點：召喚神龍</div>
+                <div class="text-[9px] opacity-75">開啟雙手插口袋離職</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stamp Grid (10 Classic Slots + Dynamic Custom Stamped) -->
+        <div id="stamp-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5 sm:gap-4">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Card Footer with Barcode & Satirical Fine Print -->
+        <div class="mt-8 pt-5 border-t-2 border-dashed border-amber-300 dark:border-zinc-700 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+            <p><strong>使用須知：</strong></p>
+            <p>1. 本卡一經戳破，恕不補繳熱情，不可折現（但可折抵剩餘青春壽命）。</p>
+            <p>2. 如遇「年終獎金即將入帳」等特殊天象，持卡人可暫停集點，入帳次日請立即兌換。</p>
+            <p>3. 最終解釋權歸持卡人僅存的良心與下班後的啤酒所有。</p>
+          </div>
+
+          <!-- Fake Barcode -->
+          <div class="text-center bg-white dark:bg-zinc-800 p-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 shadow-sm shrink-0">
+            <div class="font-mono text-xs tracking-[6px] text-slate-700 dark:text-slate-300 font-bold">
+              ||| | ||||| || ||| |||| |
+            </div>
+            <div class="text-[9px] font-mono text-slate-400 mt-0.5">RESIGN-9487-94-FREE</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ==================== TAB 2: 摸魚解壓軍火庫 ==================== -->
+    <section id="section-tools" class="hidden space-y-6">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Widget 1: 怨氣/功德木魚 -->
+        <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-lg relative overflow-hidden flex flex-col items-center justify-center text-center">
+          <div class="flex items-center justify-between w-full mb-4">
+            <h3 class="font-black text-lg flex items-center gap-2">
+              <span class="text-xl">🪘</span>
+              <span id="fish-title">辦公室怨氣木魚</span>
+            </h3>
+            <button onclick="toggleFishMode()" class="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 hover:bg-slate-200 transition">
+              切換為: <span id="fish-mode-name" class="font-bold text-amber-600">功德超渡模式</span>
+            </button>
+          </div>
+
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+            被主管罵、被同事搞？敲一下立即將業障轉化為自由積分（敲擊數據自動存檔）。
+          </p>
+
+          <!-- The Clickable Wooden Fish -->
+          <div class="relative py-6">
+            <div id="muyu-btn" onclick="tapWoodenFish(event)" class="cursor-pointer select-none w-36 h-36 rounded-full bg-gradient-to-b from-amber-700 via-amber-800 to-amber-950 text-amber-200 flex flex-col items-center justify-center shadow-xl active:scale-90 transform transition duration-100 border-4 border-amber-600 hover:brightness-110">
+              <i class="fa-solid fa-circle-dot text-4xl mb-1 text-amber-400"></i>
+              <span id="fish-btn-label" class="text-xs font-bold tracking-widest">敲擊積怨</span>
+            </div>
+            <div id="floating-container" class="absolute inset-0 pointer-events-none"></div>
+          </div>
+
+          <div class="mt-4 flex items-center gap-4 text-sm font-mono">
+            <div class="bg-slate-100 dark:bg-zinc-800 px-4 py-2 rounded-xl">
+              累積次數: <span id="fish-count" class="font-bold text-lg text-rose-600 dark:text-rose-400">0</span>
+            </div>
+            <button onclick="resetFish()" class="text-xs text-slate-400 hover:text-slate-600 underline">歸零</button>
+          </div>
+        </div>
+
+        <!-- Widget 2: 帶薪大便計費器 -->
+        <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-black text-lg flex items-center gap-2">
+                <span class="text-xl">🚽</span> 帶薪大便計費器 (Poop ROI)
+              </h3>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded-md font-mono">
+                資本主義倒流系統
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              蹲在馬桶上每一秒，都是你從資方手中奪回屬於自己的剩餘價值（薪資設定自動存檔）。
+            </p>
+
+            <div class="grid grid-cols-2 gap-3 mb-4 text-xs">
+              <div>
+                <label class="block text-slate-500 mb-1">你的月薪 (NTD):</label>
+                <input id="salary-input" type="number" value="45000" onchange="saveSalarySettings()" class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-amber-500">
+              </div>
+              <div>
+                <label class="block text-slate-500 mb-1">每月工作日數:</label>
+                <input id="workdays-input" type="number" value="22" onchange="saveSalarySettings()" class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-lg p-2 font-mono font-bold focus:outline-none focus:border-amber-500">
+              </div>
+            </div>
+
+            <div class="bg-amber-50 dark:bg-zinc-800/80 p-4 rounded-2xl border border-amber-200 dark:border-zinc-700 text-center my-2">
+              <div class="text-xs text-slate-500 mb-1">蹲坑時間</div>
+              <div id="poop-timer" class="font-mono text-3xl font-black text-slate-800 dark:text-slate-100 tracking-wider">00:00:00</div>
+              <div class="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                本次已從公司奪回：
+                <span id="poop-earnings" class="text-2xl font-mono font-black">$ 0.00</span> 元
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-4">
+            <button id="poop-toggle-btn" onclick="togglePoopTimer()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow transition">
+              <i class="fa-solid fa-play mr-1"></i> 開始帶薪蹲坑
+            </button>
+            <button onclick="resetPoopTimer()" class="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-300 transition">
+              歸零
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget 3: 摸魚裝忙假畫面 (Fake Busy Screens) -->
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-lg">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h3 class="font-black text-lg flex items-center gap-2">
+              <span class="text-xl">💻</span> 裝忙掩護系統 (Boss Approaching Mode)
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              主管經過時點擊進入全螢幕！營造出「我正在編譯超複雜程式碼」或「Windows 正在更新我不能動」的假象。
+            </p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="launchFakeScreen('terminal')" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-emerald-400 font-mono text-xs font-bold shadow flex items-center gap-2 border border-zinc-700">
+              <i class="fa-solid fa-terminal"></i> 黑客編譯假終端
+            </button>
+            <button onclick="launchFakeScreen('update')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-sans text-xs font-bold shadow flex items-center gap-2">
+              <i class="fa-brands fa-windows"></i> 假 Windows 更新中
+            </button>
+          </div>
+        </div>
+        <div class="p-3 bg-slate-100 dark:bg-zinc-800 rounded-xl text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-circle-info text-amber-500"></i>
+          <span>小提示：進入假畫面後，按 <strong>ESC</strong> 或 <strong>點擊畫面任何位置</strong> 即可安全退回。</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: 離職信生成器 ==================== -->
+    <section id="section-letter" class="hidden space-y-6">
+      <div class="bg-white dark:bg-zinc-900 border border-amber-200 dark:border-zinc-800 p-6 sm:p-8 rounded-3xl shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-zinc-800">
+          <div>
+            <div class="text-xs font-bold text-red-600 tracking-wider uppercase mb-1">FINAL ARSENAL</div>
+            <h2 class="text-2xl font-black font-serif flex items-center gap-2">
+              大人的狂暴辭職信生成器
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              集滿 10 點或忍無可忍之時，選一種文風，自動套用您卡片上的姓名與部門，一鍵複製送給主管開啟人生新篇章。
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="copyLetterToClipboard()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+              <i class="fa-solid fa-copy"></i> 複製離職信全文
+            </button>
+          </div>
+        </div>
+
+        <!-- Template Selector Buttons -->
+        <div class="flex flex-wrap gap-2 my-4">
+          <button onclick="setLetterTemplate('poetic')" id="btn-tmpl-poetic" class="template-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-zinc-700 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200">
+            🌸 詩意山水歸隱風
+          </button>
+          <button onclick="setLetterTemplate('furious')" id="btn-tmpl-furious" class="template-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800">
+            🔥 狂暴直球不裝了
+          </button>
+          <button onclick="setLetterTemplate('fortune')" id="btn-tmpl-fortune" class="template-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800">
+            🔮 玄學八字不合風
+          </button>
+          <button onclick="setLetterTemplate('buddha')" id="btn-tmpl-buddha" class="template-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800">
+            📿 佛系圓寂出家風
+          </button>
+          <button onclick="setLetterTemplate('corporate')" id="btn-tmpl-corporate" class="template-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800">
+            👔 高級黑大廠黑話風
+          </button>
+        </div>
+
+        <!-- Letter Content Output Box -->
+        <div class="relative">
+          <textarea id="resignation-letter-content" rows="12" class="w-full bg-amber-50/40 dark:bg-zinc-800/60 border border-slate-300 dark:border-zinc-700 rounded-2xl p-5 font-serif text-sm sm:text-base leading-relaxed text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-inner resize-y"></textarea>
+        </div>
+
+        <!-- Copy alert toast -->
+        <div id="copy-toast" class="hidden text-xs text-center text-emerald-600 dark:text-emerald-400 font-bold mt-2">
+          <i class="fa-solid fa-circle-check"></i> 離職信已成功複製到剪貼簿！去群組瀟灑投送吧！
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <!-- MODAL: Custom Incident Creation -->
+  <div id="custom-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-zinc-900 border-2 border-amber-500 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-zinc-800">
+        <h3 class="font-black text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-fire text-rose-500"></i> 新增專屬破防事件
+        </h3>
+        <button onclick="closeCustomIncidentModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-600 dark:text-slate-300 mb-1">事件簡稱 (標題)</label>
+          <input id="custom-title-input" type="text" placeholder="例：主管在假日時在群組艾特所有人" class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl p-2.5 font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 dark:text-slate-300 mb-1">破防細節描述</label>
+          <textarea id="custom-desc-input" rows="3" placeholder="例：點開甚至只是轉發毫無意義的心靈雞湯，還要大家按讚..." class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl p-2.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-500"></textarea>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 dark:text-slate-300 mb-1">蓋章印泥字樣</label>
+          <select id="custom-seal-select" class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl p-2.5 font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+            <option value="純純怨種">純純怨種</option>
+            <option value="忍無可忍">忍無可忍</option>
+            <option value="破防">破防</option>
+            <option value="快逃">快逃</option>
+            <option value="功德+1">功德+1</option>
+            <option value="毀滅吧">毀滅吧</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeCustomIncidentModal()" class="px-4 py-2 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-200">
+          取消
+        </button>
+        <button onclick="saveCustomIncident()" class="px-5 py-2 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 shadow">
+          立即加入並蓋章
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmation for Reset -->
+  <div id="reset-confirm-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-zinc-900 border-2 border-red-500 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+      <div class="text-4xl text-rose-500"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <h3 class="font-black text-lg text-slate-800 dark:text-slate-100">重置集點卡？</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400">
+        這將清除所有已蓋章的紅印、木魚敲擊次數與自訂事件，讓您重新回到「心如止水」的社畜原廠設定。
+      </p>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeResetConfirmModal()" class="flex-1 py-2 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">
+          再忍一下
+        </button>
+        <button onclick="executeResetAll()" class="flex-1 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow">
+          確定重製
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN FAKE TERMINAL SCREEN -->
+  <div id="fake-terminal" class="hidden fixed inset-0 z-50 bg-black text-green-400 font-mono p-6 overflow-hidden select-none cursor-pointer flex flex-col justify-end" onclick="closeFakeScreen()">
+    <div id="terminal-content" class="text-xs sm:text-sm space-y-1"></div>
+    <div class="text-[10px] text-zinc-600 mt-4 border-t border-zinc-900 pt-2 flex justify-between">
+      <span>[COMPILING CORE MODULES: 89%]</span>
+      <span>[點擊任意處或按 ESC 退出摸魚掩護]</span>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN FAKE WINDOWS UPDATE SCREEN -->
+  <div id="fake-update" class="hidden fixed inset-0 z-50 bg-[#005a9e] text-white font-sans flex flex-col items-center justify-center select-none cursor-pointer p-8 text-center" onclick="closeFakeScreen()">
+    <div class="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mb-8"></div>
+    <h2 class="text-2xl md:text-3xl font-light mb-3">正在處理重大更新</h2>
+    <p class="text-sm md:text-base opacity-90 mb-2">已完成 <span id="update-percent">27</span>%</p>
+    <p class="text-xs opacity-75">請保持電腦開啟並插上電源。這需要一點時間。</p>
+    <div class="fixed bottom-4 text-[11px] opacity-40">點擊螢幕任何處即可解除摸魚</div>
+  </div>
+
+  <!-- 10 STAMPS VICTORY MODAL -->
+  <div id="victory-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-zinc-900 border-4 border-amber-500 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center relative shadow-2xl animate-bounce-once">
+      <div class="text-6xl mb-3">🐉✨</div>
+      <span class="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full">功德圓滿・神龍現身</span>
+      <h3 class="text-2xl font-black font-serif mt-2 mb-1 text-amber-600 dark:text-amber-400">恭喜集滿 10 點！</h3>
+      <p class="text-sm text-slate-600 dark:text-slate-300 mb-6">
+        您已成功扛過所有侮辱與破防瞬間，已解鎖「老子不幹了」終極成就！真正的自由就在眼前！
+      </p>
+      <div class="space-y-3">
+        <button onclick="openLetterFromVictory()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-rose-600 text-white font-bold rounded-xl shadow-lg hover:brightness-110 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-scroll"></i> 前往領取「狂暴離職信」
+        </button>
+        <button onclick="closeVictoryModal()" class="w-full py-2.5 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 transition text-sm">
+          留在原地繼續冷笑
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* =========================================================
+       AUDIO SYNTHESIZER (Pure Web Audio API - Zero external files)
+       ========================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Satisfying rubber stamp heavy "THUMP"
+      playStamp() {
+        if (!this.enabled) return;
+        this.init();
+        const t = this.ctx.currentTime;
+        
+        // Low punch oscillator
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(32, t + 0.12);
+
+        gain.gain.setValueAtTime(1.0, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(t);
+        osc.stop(t + 0.15);
+
+        // Click / paper slap noise burst
+        const bufferSize = this.ctx.sampleRate * 0.05;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseFilter = this.ctx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.value = 800;
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.4, t);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.06);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+
+        noise.start(t);
+      }
+
+      // Wooden Fish "TOK" clack sound
+      playWoodenFish() {
+        if (!this.enabled) return;
+        this.init();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(580, t);
+        osc.frequency.exponentialRampToValueAtTime(180, t + 0.08);
+
+        gain.gain.setValueAtTime(0.8, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(t);
+        osc.stop(t + 0.1);
+      }
+
+      // Milestone Unlock Chime
+      playMilestone() {
+        if (!this.enabled) return;
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+        notes.forEach((freq, index) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = this.ctx.currentTime + index * 0.08;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.25, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.36);
+        });
+      }
+
+      // Grand Fanfare on 10 stamps
+      playFanfare() {
+        if (!this.enabled) return;
+        this.init();
+        const chord = [392.00, 523.25, 659.25, 783.99, 1046.50];
+        chord.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = this.ctx.currentTime + idx * 0.05;
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 1.3);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // Toggle sound helper
+    const soundBtn = document.getElementById('toggle-sound-btn');
+    const soundIcon = document.getElementById('sound-icon');
+    soundBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        soundIcon.className = "fa-solid fa-volume-high text-amber-600 dark:text-amber-400";
+      } else {
+        soundIcon.className = "fa-solid fa-volume-xmark text-slate-400";
+      }
+    });
+
+    // Dark Mode Toggle
+    const themeBtn = document.getElementById('toggle-dark-btn');
+    const themeIcon = document.getElementById('theme-icon');
+    themeBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      const isDark = document.documentElement.classList.contains('dark');
+      localStorage.setItem('resignation_theme', isDark ? 'dark' : 'light');
+      if (isDark) {
+        themeIcon.className = "fa-solid fa-sun text-amber-400";
+      } else {
+        themeIcon.className = "fa-solid fa-moon text-indigo-500";
+      }
+    });
+
+    // Default 10 Annoying Workplace Events
+    const DEFAULT_INCIDENTS = [
+      { id: 1, title: "下班前10分鐘拉會", desc: "主管：簡單對一下，結果對到晚上八點半。" },
+      { id: 2, title: "聽到「我們是一家人」", desc: "開口大家庭，閉口共體時艱，發年終時變遠親。" },
+      { id: 3, title: "休假傳訊「不好意思打擾」", desc: "既然知道不好意思，為什麼還要點發送？" },
+      { id: 4, title: "菜鳥薪水比自己高三千", desc: "工作全是我在帶，背黑鍋全是我在上。" },
+      { id: 5, title: "帶薪大號坐到腳發麻", desc: "純粹不想回座位，馬桶是唯一庇護所。" },
+      { id: 6, title: "對著電腦螢幕發出冷笑", desc: "看到離譜需求時，嘴角不由自主抽搐了一下。" },
+      { id: 7, title: "鬧鐘響起希望隕石撞地球", desc: "只要世界毀滅，今天就不需要去站立早會。" },
+      { id: 8, title: "這應該很簡單吧？", desc: "甲方或非技術主管用最天真的語氣要改架構。" },
+      { id: 9, title: "收到請按 1", desc: "大群組裡排隊刷 1，但我只想回中指。" },
+      { id: 10, title: "超商御飯糰前發呆三分鐘", desc: "連續三天午餐不知道吃什麼，眼神完全失去靈魂。" }
+    ];
+
+    // Stamp seal text pool
+    const STAMP_TEXTS = ["忍無可忍", "准了", "破防", "純純怨種", "功德+1", "快逃", "老子不幹了", "已黑化", "毀滅吧"];
+
+    /* =========================================================
+       LOCALSTORAGE STATE ENGINE
+       ========================================================= */
+    let incidents = [];
+    let stampedIds = new Set();
+    let currentTemplate = 'poetic';
+
+    function loadAllState() {
+      // 1. Incidents
+      try {
+        const storedIncidents = localStorage.getItem('resignation_incidents');
+        incidents = storedIncidents ? JSON.parse(storedIncidents) : DEFAULT_INCIDENTS;
+      } catch (e) {
+        incidents = DEFAULT_INCIDENTS;
+      }
+
+      // 2. Stamps
+      try {
+        const storedStamps = localStorage.getItem('resignation_stamps');
+        stampedIds = new Set(storedStamps ? JSON.parse(storedStamps) : []);
+      } catch (e) {
+        stampedIds = new Set();
+      }
+
+      // 3. User profile
+      const storedName = localStorage.getItem('resignation_user_name');
+      const storedDept = localStorage.getItem('resignation_user_dept');
+      if (storedName) document.getElementById('user-name-input').value = storedName;
+      if (storedDept) document.getElementById('user-dept-input').value = storedDept;
+
+      // 4. Salary config
+      const storedSalary = localStorage.getItem('resignation_salary');
+      const storedWorkdays = localStorage.getItem('resignation_workdays');
+      if (storedSalary) document.getElementById('salary-input').value = storedSalary;
+      if (storedWorkdays) document.getElementById('workdays-input').value = storedWorkdays;
+
+      // 5. Theme
+      if (localStorage.getItem('resignation_theme') === 'dark') {
+        document.documentElement.classList.add('dark');
+        themeIcon.className = "fa-solid fa-sun text-amber-400";
+      }
+
+      // 6. Fish Count
+      const savedFish = localStorage.getItem('resignation_fish_count');
+      if (savedFish) {
+        fishCount = parseInt(savedFish, 10) || 0;
+        document.getElementById('fish-count').innerText = fishCount;
+      }
+    }
+
+    function flashSaveIndicator() {
+      const indicator = document.getElementById('save-status-indicator');
+      const text = document.getElementById('save-status-text');
+      indicator.classList.add('scale-105');
+      text.innerText = "已存檔！";
+      setTimeout(() => {
+        indicator.classList.remove('scale-105');
+        text.innerText = "已自動存檔";
+      }, 1000);
+    }
+
+    function saveState() {
+      localStorage.setItem('resignation_stamps', JSON.stringify([...stampedIds]));
+      localStorage.setItem('resignation_incidents', JSON.stringify(incidents));
+      flashSaveIndicator();
+    }
+
+    function saveUserProfile() {
+      const name = document.getElementById('user-name-input').value;
+      const dept = document.getElementById('user-dept-input').value;
+      localStorage.setItem('resignation_user_name', name);
+      localStorage.setItem('resignation_user_dept', dept);
+      setLetterTemplate(currentTemplate);
+      flashSaveIndicator();
+    }
+
+    function saveSalarySettings() {
+      const sal = document.getElementById('salary-input').value;
+      const days = document.getElementById('workdays-input').value;
+      localStorage.setItem('resignation_salary', sal);
+      localStorage.setItem('resignation_workdays', days);
+      flashSaveIndicator();
+    }
+
+    function renderStampGrid() {
+      const grid = document.getElementById('stamp-grid');
+      grid.innerHTML = '';
+
+      incidents.forEach((item, index) => {
+        const isStamped = stampedIds.has(item.id);
+        const cardEl = document.createElement('div');
+        cardEl.className = `relative cursor-pointer select-none rounded-2xl p-4 transition-all duration-200 border-2 ${
+          isStamped 
+            ? 'bg-rose-50/80 dark:bg-rose-950/20 border-red-400 dark:border-red-900 shadow-inner' 
+            : 'bg-white dark:bg-zinc-800/90 border-amber-300/80 dark:border-zinc-700 hover:border-amber-500 hover:shadow-md'
+        } min-h-[140px] flex flex-col justify-between group overflow-hidden`;
+
+        const numStr = String(index + 1).padStart(2, '0');
+        const sealText = item.stampText || STAMP_TEXTS[index % STAMP_TEXTS.length];
+
+        cardEl.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="font-mono text-xs font-black text-amber-700 dark:text-amber-400">#${numStr}</span>
+              <span class="text-[10px] text-slate-400 font-mono tracking-tighter">CLICK TO STAMP</span>
+            </div>
+            <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100 leading-snug group-hover:text-amber-600 transition">
+              ${escapeHtml(item.title)}
+            </h4>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+              ${escapeHtml(item.desc)}
+            </p>
+          </div>
+
+          <!-- Rubber Ink Stamp overlay -->
+          <div class="stamp-container absolute inset-0 flex items-center justify-center pointer-events-none transition-transform duration-200 ${isStamped ? 'opacity-100 scale-100' : 'opacity-0 scale-150'}">
+            <div class="stamp-badge font-serif font-black text-base tracking-widest px-3 py-1 rounded-lg border-dashed text-center" style="--rot: ${((item.id * 19) % 36) - 18}deg;">
+              ${sealText}
+            </div>
+          </div>
+        `;
+
+        cardEl.onclick = () => toggleStamp(item.id, sealText);
+        grid.appendChild(cardEl);
+      });
+
+      updateProgress();
+    }
+
+    function toggleStamp(id, defaultText) {
+      sound.playStamp();
+      
+      // Screen shake effect on stamp
+      document.getElementById('printable-loyalty-card').classList.add('screen-shake');
+      setTimeout(() => {
+        document.getElementById('printable-loyalty-card').classList.remove('screen-shake');
+      }, 250);
+
+      const targetItem = incidents.find(i => i.id === id);
+      if (targetItem && !targetItem.stampText) {
+        targetItem.stampText = STAMP_TEXTS[Math.floor(Math.random() * STAMP_TEXTS.length)];
+      }
+
+      if (stampedIds.has(id)) {
+        stampedIds.delete(id);
+      } else {
+        stampedIds.add(id);
+      }
+
+      saveState();
+      renderStampGrid();
+
+      // Check milestones
+      const total = stampedIds.size;
+      if (total === 3 || total === 6 || total === 8) {
+        sound.playMilestone();
+      } else if (total === 10) {
+        triggerGrandFinale();
+      }
+    }
+
+    function updateProgress() {
+      const count = stampedIds.size;
+      const pct = Math.min(100, Math.round((count / 10) * 100));
+      
+      document.getElementById('progress-percent').innerText = `${count} / 10 點 (${pct}%)`;
+      document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+
+      const statusMap = {
+        0: "微笑中透露著平靜",
+        1: "微怒但尚能吞下",
+        3: "開始在桌底捏拳頭",
+        5: "靈魂出竅50% 眼神空洞",
+        7: "已看破紅塵，只想發笑",
+        9: "即將引爆核反應爐",
+        10: "【真正的自由】已解鎖！"
+      };
+      
+      let curStatus = statusMap[0];
+      for (const k of [10, 9, 7, 5, 3, 1, 0]) {
+        if (count >= k) {
+          curStatus = statusMap[k];
+          break;
+        }
+      }
+      document.getElementById('mental-status-text').innerText = curStatus;
+
+      // Update milestone styling
+      updateMilestoneBadge('milestone-3', count >= 3, 'border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200');
+      updateMilestoneBadge('milestone-6', count >= 6, 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-200');
+      updateMilestoneBadge('milestone-8', count >= 8, 'border-purple-400 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200');
+      updateMilestoneBadge('milestone-10', count >= 10, 'border-red-500 bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200 ring-2 ring-red-400');
+    }
+
+    function updateMilestoneBadge(id, active, activeClasses) {
+      const el = document.getElementById(id);
+      if (active) {
+        el.className = `p-2 rounded-xl transition flex items-center gap-2 border ${activeClasses}`;
+      } else {
+        el.className = 'p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 transition flex items-center gap-2 border border-transparent';
+      }
+    }
+
+    // Custom incident modal handling
+    function openCustomIncidentModal() {
+      document.getElementById('custom-modal').classList.remove('hidden');
+      document.getElementById('custom-title-input').focus();
+    }
+    function closeCustomIncidentModal() {
+      document.getElementById('custom-modal').classList.add('hidden');
+    }
+
+    function saveCustomIncident() {
+      const title = document.getElementById('custom-title-input').value.trim();
+      const desc = document.getElementById('custom-desc-input').value.trim();
+      const sealText = document.getElementById('custom-seal-select').value;
+
+      if (!title) {
+        document.getElementById('custom-title-input').focus();
+        return;
+      }
+
+      const newId = Date.now();
+      incidents.push({
+        id: newId,
+        title: title,
+        desc: desc || "無言以對，純純破防事件。",
+        stampText: sealText
+      });
+      stampedIds.add(newId);
+
+      sound.playStamp();
+      saveState();
+      renderStampGrid();
+
+      document.getElementById('custom-title-input').value = '';
+      document.getElementById('custom-desc-input').value = '';
+      closeCustomIncidentModal();
+    }
+
+    // Reset Confirmation
+    function openResetConfirmModal() {
+      document.getElementById('reset-confirm-modal').classList.remove('hidden');
+    }
+    function closeResetConfirmModal() {
+      document.getElementById('reset-confirm-modal').classList.add('hidden');
+    }
+    function executeResetAll() {
+      stampedIds.clear();
+      incidents = [...DEFAULT_INCIDENTS];
+      fishCount = 0;
+      document.getElementById('fish-count').innerText = '0';
+      localStorage.removeItem('resignation_fish_count');
+      saveState();
+      renderStampGrid();
+      closeResetConfirmModal();
+    }
+
+    function triggerLaserGlow() {
+      sound.playMilestone();
+      const tag = document.querySelector('.hologram-tag');
+      tag.classList.add('scale-125');
+      setTimeout(() => tag.classList.remove('scale-125'), 300);
+    }
+
+    function triggerGrandFinale() {
+      sound.playFanfare();
+      if (window.confetti) {
+        confetti({
+          particleCount: 130,
+          spread: 85,
+          origin: { y: 0.6 }
+        });
+        setTimeout(() => {
+          confetti({ particleCount: 75, angle: 60, spread: 55, origin: { x: 0 } });
+          confetti({ particleCount: 75, angle: 120, spread: 55, origin: { x: 1 } });
+        }, 300);
+      }
+      document.getElementById('victory-modal').classList.remove('hidden');
+    }
+
+    function closeVictoryModal() {
+      document.getElementById('victory-modal').classList.add('hidden');
+    }
+
+    function openLetterFromVictory() {
+      closeVictoryModal();
+      switchTab('letter');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    // Tab Switching
+    function switchTab(tab) {
+      document.getElementById('section-card').classList.add('hidden');
+      document.getElementById('section-tools').classList.add('hidden');
+      document.getElementById('section-letter').classList.add('hidden');
+
+      ['card', 'tools', 'letter'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}-btn`);
+        if (t === tab) {
+          btn.className = "py-2.5 px-4 font-bold text-sm border-b-2 border-amber-600 text-amber-700 dark:text-amber-400 flex items-center gap-2 whitespace-nowrap";
+        } else {
+          btn.className = "py-2.5 px-4 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2 whitespace-nowrap";
+        }
+      });
+
+      document.getElementById(`section-${tab}`).classList.remove('hidden');
+    }
+
+    // Wooden Fish Logic
+    let fishMode = 'anger';
+    let fishCount = 0;
+
+    function toggleFishMode() {
+      if (fishMode === 'anger') {
+        fishMode = 'merit';
+        document.getElementById('fish-title').innerText = "社畜功德木魚";
+        document.getElementById('fish-mode-name').innerText = "怨氣積攢模式";
+        document.getElementById('fish-btn-label').innerText = "功德超渡";
+      } else {
+        fishMode = 'anger';
+        document.getElementById('fish-title').innerText = "辦公室怨氣木魚";
+        document.getElementById('fish-mode-name').innerText = "功德超渡模式";
+        document.getElementById('fish-btn-label').innerText = "敲擊積怨";
+      }
+    }
+
+    function tapWoodenFish(e) {
+      sound.playWoodenFish();
+      fishCount++;
+      document.getElementById('fish-count').innerText = fishCount;
+      localStorage.setItem('resignation_fish_count', fishCount);
+      flashSaveIndicator();
+
+      const container = document.getElementById('floating-container');
+      const floater = document.createElement('div');
+      floater.className = 'float-text';
+      
+      if (fishMode === 'anger') {
+        const texts = ["怨氣 +100", "破防 -10", "心率 +20", "理智 -5", "想辭職 +1", "核善微笑 +1"];
+        floater.innerText = texts[Math.floor(Math.random() * texts.length)];
+        floater.classList.add('text-red-500');
+      } else {
+        const texts = ["功德 +1", "業障 -1", "薪水小偷 +1", "放下執念", "神龍召喚 +1"];
+        floater.innerText = texts[Math.floor(Math.random() * texts.length)];
+        floater.classList.add('text-amber-500');
+      }
+
+      const offsetX = (Math.random() - 0.5) * 80;
+      floater.style.left = `calc(50% + ${offsetX}px)`;
+      floater.style.top = '40%';
+
+      container.appendChild(floater);
+      setTimeout(() => floater.remove(), 850);
+    }
+
+    function resetFish() {
+      fishCount = 0;
+      document.getElementById('fish-count').innerText = '0';
+      localStorage.setItem('resignation_fish_count', '0');
+      flashSaveIndicator();
+    }
+
+    // Paid Poop Salary Calculator Logic
+    let poopTimer = null;
+    let poopSeconds = 0;
+
+    function togglePoopTimer() {
+      const btn = document.getElementById('poop-toggle-btn');
+      if (poopTimer) {
+        clearInterval(poopTimer);
+        poopTimer = null;
+        btn.innerHTML = `<i class="fa-solid fa-play mr-1"></i> 繼續蹲坑`;
+        btn.className = "flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow transition";
+      } else {
+        poopTimer = setInterval(tickPoopTimer, 1000);
+        btn.innerHTML = `<i class="fa-solid fa-pause mr-1"></i> 擦屁股暫停`;
+        btn.className = "flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow transition";
+      }
+    }
+
+    function tickPoopTimer() {
+      poopSeconds++;
+      const hrs = String(Math.floor(poopSeconds / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((poopSeconds % 3600) / 60)).padStart(2, '0');
+      const secs = String(poopSeconds % 60).padStart(2, '0');
+      document.getElementById('poop-timer').innerText = `${hrs}:${mins}:${secs}`;
+
+      const salary = parseFloat(document.getElementById('salary-input').value) || 45000;
+      const workdays = parseFloat(document.getElementById('workdays-input').value) || 22;
+      const perSecondRate = salary / (workdays * 8 * 3600);
+      const earned = (perSecondRate * poopSeconds).toFixed(2);
+      document.getElementById('poop-earnings').innerText = `$ ${earned}`;
+    }
+
+    function resetPoopTimer() {
+      if (poopTimer) {
+        clearInterval(poopTimer);
+        poopTimer = null;
+      }
+      poopSeconds = 0;
+      document.getElementById('poop-timer').innerText = '00:00:00';
+      document.getElementById('poop-earnings').innerText = '$ 0.00';
+      const btn = document.getElementById('poop-toggle-btn');
+      btn.innerHTML = `<i class="fa-solid fa-play mr-1"></i> 開始帶薪蹲坑`;
+      btn.className = "flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow transition";
+    }
+
+    // Fake screens logic
+    let fakeTerminalInterval = null;
+    let fakeUpdateInterval = null;
+
+    const FAKE_CODE_LINES = [
+      "gcc -O3 -pthread -Wall -c src/resignation_engine.cpp -o obj/freedom.o",
+      "Resolving dependency: libmental_health.so.1 ... NOT FOUND, fallback to sarcasm",
+      "[INFO] Worker thread #42 status: EXHAUSTED (CPU: 99.8%)",
+      ">> Compiling dynamic routing table for HR escape protocol...",
+      "Cloning repository 'git@github.com:boss-mind/nonsense-requests.git' [DONE]",
+      "[WARN] Salary / Inflation ratio index below minimum tolerance threshold: 0.12",
+      "Scanning memory leaks: 14.8 GB leaked into unread Slack threads",
+      "Executing: rm -rf /office/anxiety/* --no-preserve-root",
+      ">> Optimization pass 4/8: Inlining coffee caffeine molecules into bloodstream",
+      "[SUCCESS] Core package 'zero_fucks_given_v3' successfully linked.",
+      "Syncing with remote server: 192.168.1.104:8080 ... Connection refused."
+    ];
+
+    function launchFakeScreen(type) {
+      if (type === 'terminal') {
+        const term = document.getElementById('fake-terminal');
+        const content = document.getElementById('terminal-content');
+        content.innerHTML = '';
+        term.classList.remove('hidden');
+
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+
+        fakeTerminalInterval = setInterval(() => {
+          const line = document.createElement('div');
+          const randomLine = FAKE_CODE_LINES[Math.floor(Math.random() * FAKE_CODE_LINES.length)];
+          const now = new Date().toTimeString().split(' ')[0];
+          line.innerText = `[${now}] ${randomLine}`;
+          content.appendChild(line);
+          if (content.children.length > 22) {
+            content.removeChild(content.children[0]);
+          }
+        }, 180);
+
+      } else if (type === 'update') {
+        const updateScreen = document.getElementById('fake-update');
+        updateScreen.classList.remove('hidden');
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+
+        let pct = 27;
+        fakeUpdateInterval = setInterval(() => {
+          if (pct < 99 && Math.random() > 0.4) {
+            pct++;
+            document.getElementById('update-percent').innerText = pct;
+          }
+        }, 2500);
+      }
+    }
+
+    function closeFakeScreen() {
+      document.getElementById('fake-terminal').classList.add('hidden');
+      document.getElementById('fake-update').classList.add('hidden');
+      if (fakeTerminalInterval) clearInterval(fakeTerminalInterval);
+      if (fakeUpdateInterval) clearInterval(fakeUpdateInterval);
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeFakeScreen();
+    });
+
+    // Resignation Letter Templates
+    const RESIGNATION_TEMPLATES = {
+      poetic: `尊敬的領導：
+
+世界那麼大，我想去看看。
+風起於青萍之末，浪成於微瀾之間。我在公司的日子，如落葉遇疾風，縱有千般留戀，亦難敵命運之催促。
+
+本部門的水很深，會議很長，而我的陽壽很短。
+為了讓彼此保留最初的美好回憶，我決定將我微不足道的位子讓給更具犧牲精神的新同志。
+
+最後工作日訂於下月今日。願貴司蓬勃發展，業務蒸蒸日上，會議愈開愈精簡。
+
+此致
+敬禮
+
+離職員工：{{NAME}}
+所屬部門：{{DEPT}}
+日期：2026年吉日`,
+
+      furious: `主管好：
+
+老子不幹了。
+
+這張離職集點卡我已經蓋滿十格了。從下班前十分鐘拉會、到休假彈訊問檔案放在哪，我的精神忍耐度已經超越國際防輻射標準。
+
+薪水發得像在施捨，事情催得像在奔喪。
+交接文檔我都整理在桌面那個名為「祝你們幸福」的資料夾裡。
+
+請儘速啟動離職流程，勞健保轉出單寄到我信箱即可，大家江湖不見！
+
+揮一揮衣袖，不帶走一根迴紋針的
+{{NAME}} 留`,
+
+      fortune: `主管敬悉：
+
+近日偶感身心欠安，遂赴龍山寺及行天宮祈請神明批示八字流年。
+算命仙人掐指一算，面露駭色，直言：
+「施主命格屬火，而貴司辦公大樓風水帶煞，土氣過重，若再強制打卡、連續加班，恐有命犯太歲、英年早逝之虞。」
+
+大師叮囑我即日起必須退隱山林、遠離即時通訊軟體群組，每日沐浴晨光、吸收天地靈氣，方能保全陽壽。
+
+為順應天命、避免個人八字煞氣波及貴司季度 KPI，特提出離職申請。天命不可違，望主管恩准。
+
+命理逢凶化吉之人：{{NAME}}
+敬啟`,
+
+      buddha: `主管阿彌陀佛：
+
+一切有為法，如夢幻泡影，如露亦如電，應作如是觀。
+
+歷經多次無效專案與深夜改版後，弟子頓悟了。打卡即是虛妄，績效評核純屬業障，跨部門溝通乃三界火宅。
+弟子心無罣礙，無罣礙故，無有恐怖，遠離顛倒夢想。
+
+特此呈上這封辭呈，不是我不幹，是我已圓寂於工位之中。
+願貴司諸位同仁早日參透紅塵，善哉善哉。
+
+貧道法號：{{NAME}}
+合十`,
+
+      corporate: `Dear Team Leader,
+
+經過全面的戰略審視與深度覆盤，本人決定在個人的生命週期模型中進行垂直維度的資源重組。
+
+在過去的賦能過程中，我深刻體會到了各方資源在閉環推進時產生的巨大摩擦阻力。為了更好地聚焦底層邏輯、擊穿痛點，我決定主動從當前的業務生態矩陣中解耦，實現個人價值的自由遷徙。
+
+我將在交接期內完成知識沉澱與流程標準化對齊，確保團隊的打法不受單點故障影響。期待貴司在未來的抓手與協同中再創佳績。
+
+Regards,
+{{NAME}} ({{DEPT}})`
+    };
+
+    function setLetterTemplate(key) {
+      currentTemplate = key;
+      const name = document.getElementById('user-name-input').value.trim() || '天選社畜小王';
+      const dept = document.getElementById('user-dept-input').value.trim() || '全功能揹鍋組';
+      
+      let raw = RESIGNATION_TEMPLATES[key] || RESIGNATION_TEMPLATES.poetic;
+      raw = raw.replace(/{{NAME}}/g, name).replace(/{{DEPT}}/g, dept);
+
+      document.getElementById('resignation-letter-content').value = raw;
+
+      document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-50', 'dark:bg-amber-950/40', 'text-amber-800', 'dark:text-amber-200');
+        btn.classList.add('hover:bg-slate-100', 'dark:hover:bg-zinc-800');
+      });
+      const activeBtn = document.getElementById(`btn-tmpl-${key}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-amber-50', 'dark:bg-amber-950/40', 'text-amber-800', 'dark:text-amber-200');
+      }
+    }
+
+    function copyLetterToClipboard() {
+      const textarea = document.getElementById('resignation-letter-content');
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+      
+      try {
+        document.execCommand('copy');
+        const toast = document.getElementById('copy-toast');
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+      } catch (err) {
+        console.error("Copy failed", err);
+      }
+    }
+
+    // App Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      loadAllState();
+      renderStampGrid();
+      setLetterTemplate('poetic');
+    });
+  </script>
+</body>
+</html>
